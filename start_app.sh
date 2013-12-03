@@ -1,11 +1,12 @@
 set -e
 
 HOSTNAME=$1
+APP_NAME=app-$HOSTNAME
 PORT=${2-5000}
 
 ROUTER_IP_ADDR=$(docker inspect router | json -a NetworkSettings.IPAddress)
 
-APP_CONTAINER_ID=$(docker run -t -d -p $PORT -e "PORT=$PORT" -e "SERVER_ID=$SERVER_ID" -name=$HOSTNAME node-sample)
+APP_CONTAINER_ID=$(docker run -t -d -p $PORT -e "PORT=$PORT" -e "SERVER_ID=$SERVER_ID" -name=$APP_NAME node-sample)
 APP_IP_ADDR=$(docker inspect $APP_CONTAINER_ID | json -a NetworkSettings.IPAddress)
 
 sudo iptables -D FORWARD -i docker0 -o docker0 -j DROP
