@@ -1,0 +1,18 @@
+{
+  "name": "director",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "argo": "~0.4.7",
+    "argo-clf": "~0.0.3",
+    "argo-gzip": "~0.2.0",
+    "argo-url-router": "0.0.4"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-2-Clause"
+}
