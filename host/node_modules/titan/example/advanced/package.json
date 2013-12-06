@@ -1,0 +1,16 @@
+{
+  "name": "titan-example-advanced",
+  "version": "0.0.0",
+  "description": "An advanced example of Titan.",
+  "main": "server.js",
+  "dependencies": {
+    "argo-formatter-siren": "~0.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Kevin Swiber <kswiber@gmail.com>",
+  "license": "MIT"
+}
