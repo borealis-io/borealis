@@ -53,18 +53,18 @@ function buffer(stream, callback) {
   }
 };
 
-var BuildContainer = module.exports = function(server) {
+var Container = module.exports = function(server) {
   this.server = server;
 };
 
-BuildContainer.prototype._configure = function(options) {
+Container.prototype._configure = function(options) {
   options.path = '/' + this.server.version + options.path;
   options.socketPath = this.server.path;
 
   return options;
 };
 
-BuildContainer.prototype.create = function(config, cb) {
+Container.prototype.create = function(config, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/create',
@@ -86,7 +86,7 @@ BuildContainer.prototype.create = function(config, cb) {
 };
 
 
-BuildContainer.prototype.attach = function(id, input, cb) {
+Container.prototype.attach = function(id, input, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/attach',
@@ -114,7 +114,7 @@ BuildContainer.prototype.attach = function(id, input, cb) {
   });
 };
 
-BuildContainer.prototype.start = function(id, cb) {
+Container.prototype.start = function(id, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/start',
@@ -136,7 +136,7 @@ BuildContainer.prototype.start = function(id, cb) {
   req.end();
 };
 
-BuildContainer.prototype.wait = function(id, cb) {
+Container.prototype.wait = function(id, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/wait',
@@ -166,14 +166,14 @@ BuildContainer.prototype.wait = function(id, cb) {
   req.end();
 };
 
-BuildContainer.prototype.commit = function(id, image, cb) {
+Container.prototype.commit = function(id, image, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/commit',
     headers: { 'Content-Type': 'text/plain' }
   });
 
-  options.path = options.path + '?container=' + id + '&repo=' + 'build-' + image;
+  options.path = options.path + '?container=' + id + '&repo=' + image;
 
   var req = http.request(options, function(res) {
     if (res.statusCode === 404) {
@@ -192,6 +192,6 @@ BuildContainer.prototype.commit = function(id, image, cb) {
   req.end();
 };
 
-BuildContainer.create = function(server) {
-  return new BuildContainer(server);
+Container.create = function(server) {
+  return new Container(server);
 };

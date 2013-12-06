@@ -68,16 +68,66 @@ BuildResource.prototype.create = function(env, next) {
   });
 
   pipeline.fit(function(context, next) {
-    console.log(context.id);
-    container.commit(context.id, context.env.route.params.name, function(err, id) {
+    container.commit(context.id, 'build-' + context.env.route.params.name, function(err, id) {
       if (err) {
-        console.log(err);
         context.env.response.statusCode = 500;
         return context.next(context.env);
       }
 
       context.image = id;
-      console.log(id);
+      next(context);
+    });
+  });
+
+  pipeline.fit(function(context, next) {
+    var config = {
+      Image: 'build-' + context.env.route.params.name,
+      Cmd: ['/build/builder']
+    };
+
+    container.create(config, function(err, body) {
+      if (!body || err) {
+        env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
+      body = JSON.parse(body.toString());
+      context.appId = body.Id;
+
+      next(context);
+    });
+  });
+
+  pipeline.fit(function(context, next) {
+    container.start(context.appId, function(err) {
+      if (err) {
+        env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
+      next(context);
+    });
+  });
+
+  pipeline.fit(function(context, next) {
+    container.wait(context.appId, function(err) {
+      if (err) {
+        context.env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
+      next(context);
+    });
+  });
+
+  pipeline.fit(function(context, next) {
+    container.commit(context.appId, 'app-' + context.env.route.params.name, function(err, id) {
+      if (err) {
+        context.env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
+      context.appImage = id;
       next(context);
     });
   });
