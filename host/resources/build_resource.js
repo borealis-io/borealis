@@ -1,5 +1,6 @@
 var pipeworks = require('pipeworks');
-var BuildContainer = require('../build_container');
+var Container = require('../container');
+var config = require('../config/build_container');
 var server = require('../config/server');
 
 var BuildResource = module.exports = function() {
@@ -12,12 +13,12 @@ BuildResource.prototype.init = function(config) {
 };
 
 BuildResource.prototype.create = function(env, next) {
-  var container = BuildContainer.create(server);
+  var container = Container.create(server);
 
   var pipeline = pipeworks();
 
   pipeline.fit(function(context, next) {
-    container.create(context.env, function(err, body) {
+    container.create(config, function(err, body) {
       if (!body || err) {
         env.response.statusCode = 500;
         return context.next(context.env);
@@ -31,7 +32,7 @@ BuildResource.prototype.create = function(env, next) {
   });
 
   pipeline.fit(function(context, next) {
-    container.attach(context.env, context.id, function(err, client) {
+    container.attach(context.id, context.env.request, function(err, client) {
       if (err) {
         context.env.response.statusCode = 500;
         return context.next(context.env);
@@ -43,7 +44,7 @@ BuildResource.prototype.create = function(env, next) {
   });
 
   pipeline.fit(function(context, next) {
-    container.start(context.env, context.id, function(err) {
+    container.start(context.id, function(err) {
       if (err) {
         env.response.statusCode = 500;
         return context.next(context.env);
@@ -56,12 +57,27 @@ BuildResource.prototype.create = function(env, next) {
   });
 
   pipeline.fit(function(context, next) {
-    container.wait(context.env, context.id, function(err) {
+    container.wait(context.id, function(err) {
+      if (err) {
+        context.env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
+      next(context);
+    });
+  });
+
+  pipeline.fit(function(context, next) {
+    console.log(context.id);
+    container.commit(context.id, context.env.route.params.name, function(err, id) {
       if (err) {
         console.log(err);
         context.env.response.statusCode = 500;
+        return context.next(context.env);
       }
 
+      context.image = id;
+      console.log(id);
       next(context);
     });
   });

@@ -1,6 +1,57 @@
 var http = require('http');
 var net = require('net');
-var config = require('./config/build_container');
+
+function buffer(stream, callback) {
+  if (stream.body !== null && stream.body !== undefined) {
+    return callback(null, stream.body);
+  }
+
+  if (!stream.readable) {
+    return callback();
+  }
+
+  var buf = [];
+  var len = 0;
+  var body;
+
+  stream.on('readable', function() {
+    var chunk;
+
+    while ((chunk = stream.read()) != null) {
+      buf.push(chunk);
+      len += chunk.length;
+    }
+
+    if (!buf.length) {
+      return;
+    }
+
+    if (buf.length && Buffer.isBuffer(buf[0])) {
+      body = new Buffer(len);
+      var i = 0;
+      buf.forEach(function(chunk) {
+        chunk.copy(body, i, 0, chunk.length);
+        i += chunk.length;
+      });
+    } else if (buf.length) {
+      body = buf.join('');
+    }
+  });
+
+  var error = null;
+  stream.on('error', function(err) {
+    error = err;
+  });
+
+  stream.on('end', function() {
+    stream.body = body;
+    callback(error, body);
+  });
+
+  if (typeof stream.read === 'function') {
+    stream.read(0);
+  }
+};
 
 var BuildContainer = module.exports = function(server) {
   this.server = server;
@@ -13,7 +64,7 @@ BuildContainer.prototype._configure = function(options) {
   return options;
 };
 
-BuildContainer.prototype.create = function(env, cb) {
+BuildContainer.prototype.create = function(config, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/create',
@@ -22,11 +73,10 @@ BuildContainer.prototype.create = function(env, cb) {
 
   var req = http.request(options, function(res) {
     if (res.statusCode != 201) {
-      env.response.statusCode = 500;
       return cb(new Error('Unable to create build container - ' + res.statusCode));
     }
 
-    env.response.getBody.call(res, cb);
+    buffer(res, cb);
   })
 
   var body = config;
@@ -36,7 +86,7 @@ BuildContainer.prototype.create = function(env, cb) {
 };
 
 
-BuildContainer.prototype.attach = function(env, id, cb) {
+BuildContainer.prototype.attach = function(id, input, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/attach',
@@ -55,7 +105,7 @@ BuildContainer.prototype.attach = function(env, id, cb) {
                  'Content-Type: application/vnd.docker.raw-stream\r\n\r\n');
 
     client.on('data', function(data) {
-      env.request.pipe(client);
+      input.pipe(client);
     });
 
     client.on('finish', function() {
@@ -64,7 +114,7 @@ BuildContainer.prototype.attach = function(env, id, cb) {
   });
 };
 
-BuildContainer.prototype.start = function(env, id, cb) {
+BuildContainer.prototype.start = function(id, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/start',
@@ -86,7 +136,7 @@ BuildContainer.prototype.start = function(env, id, cb) {
   req.end();
 };
 
-BuildContainer.prototype.wait = function(env, id, cb) {
+BuildContainer.prototype.wait = function(id, cb) {
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/wait',
@@ -100,7 +150,7 @@ BuildContainer.prototype.wait = function(env, id, cb) {
       return cb(new Error('Unable to wait a build container - server error'));
     }
 
-    env.response.getBody.call(res, function(err, body) {
+    buffer(res, function(err, body) {
       body = JSON.parse(body.toString());
 
       var code = body.StatusCode;
@@ -110,6 +160,32 @@ BuildContainer.prototype.wait = function(env, id, cb) {
       } else {
         cb()
       }
+    });
+  });
+
+  req.end();
+};
+
+BuildContainer.prototype.commit = function(id, image, cb) {
+  var options = this._configure({
+    method: 'POST',
+    path: '/commit',
+    headers: { 'Content-Type': 'text/plain' }
+  });
+
+  options.path = options.path + '?container=' + id + '&repo=' + 'build-' + image;
+
+  var req = http.request(options, function(res) {
+    if (res.statusCode === 404) {
+      return cb(new Error('Unable to wait a commit container - container does not exist'));
+    } else if (res.statusCode === 500) {
+      return cb(new Error('Unable to wait a commit container - server error'));
+    }
+
+    buffer(res, function(err, body) {
+      body = JSON.parse(body.toString());
+
+      cb(null, body.Id);
     });
   });
 
