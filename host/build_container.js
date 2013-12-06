@@ -1,5 +1,6 @@
 var http = require('http');
 var net = require('net');
+var config = require('./config/build_container');
 
 var BuildContainer = module.exports = function(server) {
   this.server = server;
@@ -28,14 +29,7 @@ BuildContainer.prototype.create = function(env, cb) {
     env.response.getBody.call(res, cb);
   })
 
-  var body = {
-    AttachStdin: true,
-    OpenStdin: true,
-    StdinOnce: true,
-    Image: 'progrium/buildstep',
-    Cmd: ['/bin/bash', '-c', 'mkdir -p /app && tar -xC /app'],
-    Tty: false
-  };
+  var body = config;
 
   req.write(JSON.stringify(body));
   req.end();
@@ -47,7 +41,7 @@ BuildContainer.prototype.attach = function(env, id, cb) {
     method: 'POST',
     path: '/containers/' + id + '/attach',
     headers: { 'Content-Type': 'application/vnd.docker.raw-stream' },
-    query: { stdin: 1, stream: 1 },
+    query: { stdin: 1, stream: 1 }
   });
 
   var client = net.connect({ path: this.server.path });
@@ -88,6 +82,36 @@ BuildContainer.prototype.start = function(env, id, cb) {
   });
 
   req.on('error', cb);
+
+  req.end();
+};
+
+BuildContainer.prototype.wait = function(env, id, cb) {
+  var options = this._configure({
+    method: 'POST',
+    path: '/containers/' + id + '/wait',
+    headers: { 'Content-Type': 'text/plain' },
+  });
+
+  var req = http.request(options, function(res) {
+    if (res.statusCode === 404) {
+      return cb(new Error('Unable to wait a build container - container does not exist'));
+    } else if (res.statusCode === 500) {
+      return cb(new Error('Unable to wait a build container - server error'));
+    }
+
+    env.response.getBody.call(res, function(err, body) {
+      body = JSON.parse(body.toString());
+
+      var code = body.StatusCode;
+
+      if (code !== 0) {
+        cb(new Error('Unable to execute build container - ' + code));
+      } else {
+        cb()
+      }
+    });
+  });
 
   req.end();
 };

@@ -1,7 +1,7 @@
 var argo = require('argo');
 var router = require('argo-url-router');
 var BuildContainer = require('./build_container');
-var server = require('./server');
+var server = require('./config/server');
 
 argo()
   .use(router)
@@ -30,7 +30,15 @@ argo()
             }
 
             client.end();
-            next(env);
+
+            container.wait(env, id, function(err) {
+              if (err) {
+                console.log(err);
+                env.response.statusCode = 500;
+              }
+
+              next(env);
+            });
           });
         });
       });
