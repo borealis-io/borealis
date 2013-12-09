@@ -2,12 +2,15 @@ var argo = require('argo'),
     resource = require('argo-resource'),
     router = require('argo-url-router'),
     redis = require('redis'),
+    uuid = require('node-uuid'),
     ws = require('ws'),
     port = process.env.REDIS_PORT || 6379,
     host = process.env.REDIS_HOST || "127.0.0.1";
 
+var redisClient = new redis.createClient(port, host);
+
 var Logs = function() {
-  this.redisClient = new redis.createClient(port, host);
+  this.redisClient = redisClient;
 };
 
 Logs.prototype.init = function(config) {
@@ -27,7 +30,7 @@ Logs.prototype.list = function(env, next) {
       env.response.body = { "error":error };
     } else {
       env.response.statusCode = 200;
-      env.response.body = JSON.stringify(response);
+      env.response.body = JSON.stringify(response); 
     }
     next(env);
   });
@@ -49,9 +52,7 @@ Logs.prototype.add = function(env, next) {
           env.response.body = {"error":error};
           return next(env);
         } else {
-          if(channelKey in clientMapping) {
-            clientMapping[channelKey].send(body.message);
-          }
+          wsClients.publish(channel,body.message);
           env.response.statusCode = 204;
           return next(env);
         }
@@ -84,13 +85,110 @@ var WebSocketServer = require('ws').Server,
     wss = new WebSocketServer({port: process.env.WEB_SOCKET_PORT || 3001}),
     clientMapping = {};
 
+var wsClients = new ClientMappings();
+
+
+function ClientMappings(){
+  if(!(this instanceof ClientMappings))
+    return new ClientMappings();
+
+  this.mappings = {};
+}
+
+ClientMappings.prototype.publish = function(channel,msg,ws) {
+  if(this.mappings[channel] === undefined)
+    return;
+
+  if(ws === undefined){
+    for(var cId in this.mappings[channel]){
+      try{
+        this.mappings[channel][cId].send(msg);
+      }catch(err){
+        console.error(err)
+      }
+    }
+  }else{
+    if(this.mappings[channel] && this.mappings[channel][ws._clientId]){
+      this.mappings[channel][ws._clientId].send(msg);
+    }
+  }
+};
+
+ClientMappings.prototype.subscribe = function(ws,channel) {
+
+  if(this.mappings[channel] === undefined){
+    this.mappings[channel] = {};
+  }
+
+  this.mappings[channel][ws._clientId] = ws;
+};
+
+ClientMappings.prototype.unsubscribe = function(ws,channel){
+  // if channel is undefined remove ws from all attached channels.
+  if(channel === undefined){
+    for(var ch in this.mappings){
+      delete this.mappings[ch][ws._clientId];
+    }
+  }else{
+    if(this.mappings[channel] === undefined)
+      return;
+
+    delete this.mappings[channel][ws._clientId];
+  }
+};
+
+var WsSocketMessages = {
+  SUBCRIBE : 'subscribe',
+  UNSUBSCRIBE : 'unsubscribe',
+  ADD : 'add',
+};
+
+
 //Connection event.    
 wss.on('connection', function(ws) {
+  ws._clientId = uuid.v1();
+
   ws.on('message', function(message) {
     var messageObject = JSON.parse(message);
-    var channel = "chan:"+messageObject.channel;
-    ws.send("{'subscription':'"+channel+"'}");
-    clientMapping[channel] = ws;
-    console.log("WS PACKET:"+message);
+
+    if(messageObject.type === WsSocketMessages.SUBCRIBE){
+      
+      wsClients.subscribe(ws,messageObject.channel);
+      ws.send("{'subscription':'"+messageObject.channel+"'}");
+
+      redisClient.lrange("chan:"+messageObject.channel, 0, 19, function(error, response) {
+        if(!error) {
+          for(var i=response.length;i>=0;--i){
+            wsClients.publish(messageObject.channel,response[i],ws);
+          }
+        }
+      });
+
+    }else if(messageObject.type === WsSocketMessages.UNSUBSCRIBE){
+      
+      wsClients.unsubscribe(ws,messageObject.channel);
+
+    }else if(messageObject.type === WsSocketMessages.ADD){
+      
+      var channelKey = "chan:"+messageObject.channel;
+
+      redisClient.lpush(channelKey,messageObject.message, function(error, response) {
+        if(error) {
+          ws.send("{'subscription':'"+messageObject.channel+"','status' : '500'}");
+        } else {
+          wsClients.publish(messageObject.channel,messageObject.message);
+          ws.send("{'subscription':'"+messageObject.channel+"','status' : '204'}");
+        }
+      });
+
+    }else{
+      // type does not exist
+      ws.send("{'subscription':'"+messageObject.channel+"','status' : '404','message' : 'message type not valid'}");
+    }
   });
+
+  ws.on('close',function(){
+    wsClients.unsubscribe(ws);
+  });
+
 });

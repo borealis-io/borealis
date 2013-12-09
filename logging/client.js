@@ -8,7 +8,22 @@ var WebSocket = require('ws'),
     ws = new WebSocket(wsPath);
 
 ws.on('open', function() {
-  ws.send('{"channel":"app1"}');
+  var msg = {
+  	type : 'subscribe',
+  	channel : 'app1'
+  };
+  ws.send(JSON.stringify(msg));
+
+  setTimeout(function(){
+	var msg = {
+	  	type : 'add',
+	  	channel : 'app1',
+	  	message : 'new message from ws'
+	  };
+
+  	ws.send(JSON.stringify(msg));
+  },5000)
+
 });
 
 ws.on('message', function(data, flags) {
