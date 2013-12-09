@@ -159,8 +159,7 @@ BuildResource.prototype.create = function(env, next) {
       PortBindings: {
         '5000/tcp': [
           {
-            HostIp: '0.0.0.0',
-            HostPort: nextPort().toString()
+            HostPort: '0'
           }
         ]
       }
