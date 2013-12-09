@@ -1,6 +1,7 @@
 var argo = require('argo'),
     resource = require('argo-resource'),
     router = require('argo-url-router'),
+    http = require('http'),
     redis = require('redis'),
     uuid = require('node-uuid'),
     ws = require('ws'),
@@ -75,14 +76,17 @@ Logs.prototype.removeChannel = function(env, next) {
   });
 };
 
-argo()
-  .use(router)
-  .use(resource(Logs))
-  .listen(process.env.PORT || 3000);
+var app = argo()
+              .use(router)
+              .use(resource(Logs))
+              .build();
+
+var server = http.createServer(app.run).listen(process.env.PORT || 3000);
+
 
 //Websocket logging implementation below.
 var WebSocketServer = require('ws').Server,
-    wss = new WebSocketServer({port: process.env.WEB_SOCKET_PORT || 3001}),
+    wss = new WebSocketServer({server: server}),
     clientMapping = {};
 
 var wsClients = new ClientMappings();

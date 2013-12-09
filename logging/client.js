@@ -3,7 +3,7 @@
 
 var WebSocket = require('ws'),
     host = process.env.WEB_SOCKET_HOST || '0.0.0.0',
-    port = process.env.WEB_SOCKET_PORT || 3001,
+    port = process.env.WEB_SOCKET_PORT || 3000,
     wsPath = 'ws://'+host+':'+port+'/',
     ws = new WebSocket(wsPath);
 
