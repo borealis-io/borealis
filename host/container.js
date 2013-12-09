@@ -114,11 +114,22 @@ Container.prototype.attach = function(id, input, cb) {
   });
 };
 
-Container.prototype.start = function(id, cb) {
+Container.prototype.start = function(id, body, cb) {
+  if (typeof body === 'function') {
+    cb = body;
+    body = null;
+  }
+
+  var contentType = body ? 'application/json' : 'text/plain';
+
+  if (typeof body === 'object') {
+    body = JSON.stringify(body);
+  }
+
   var options = this._configure({
     method: 'POST',
     path: '/containers/' + id + '/start',
-    headers: { 'Content-Type': 'text/plain' },
+    headers: { 'Content-Type': contentType },
   });
 
   var req = http.request(options, function(res) {
@@ -132,6 +143,10 @@ Container.prototype.start = function(id, cb) {
   });
 
   req.on('error', cb);
+
+  if (body) {
+    req.write(body);
+  }
 
   req.end();
 };

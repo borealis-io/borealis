@@ -2,6 +2,7 @@ var pipeworks = require('pipeworks');
 var Container = require('../container');
 var config = require('../config/build_container');
 var server = require('../config/server');
+var nextPort = require('../port_finder');
 
 var BuildResource = module.exports = function() {
 };
@@ -128,6 +129,49 @@ BuildResource.prototype.create = function(env, next) {
       }
 
       context.appImage = id;
+      next(context);
+    });
+  });
+
+  // release
+  pipeline.fit(function(context, next) {
+    var config = {
+      Image: 'app-' + context.env.route.params.name,
+      Cmd: ['/app/bin/node', '/app'],
+      Env: ['PORT=5000'],
+    };
+
+    container.create(config, function(err, body) {
+      if (!body || err) {
+        env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
+      body = JSON.parse(body.toString());
+      context.runId = body.Id;
+
+      next(context);
+    });
+  });
+
+  pipeline.fit(function(context, next) {
+    var body = {
+      PortBindings: {
+        '5000/tcp': [
+          {
+            HostIp: '0.0.0.0',
+            HostPort: nextPort().toString()
+          }
+        ]
+      }
+    };
+
+    container.start(context.runId, body, function(err) {
+      if (err) {
+        env.response.statusCode = 500;
+        return context.next(context.env);
+      }
+
       next(context);
     });
   });
