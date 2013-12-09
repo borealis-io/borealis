@@ -1,0 +1,32 @@
+{
+  "name": "docker-logger",
+  "version": "0.0.0",
+  "description": "Logger module for docker-paas",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kevinswiber/docker-paas"
+  },
+  "keywords": [
+    "docker",
+    "node",
+    "logging"
+  ],
+  "author": "mdobs <mdobson4@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kevinswiber/docker-paas/issues"
+  },
+  "homepage": "https://github.com/kevinswiber/docker-paas",
+  "dependencies": {
+    "argo": "~0.4.7",
+    "argo-resource": "0.0.8",
+    "redis": "~0.9.1",
+    "argo-url-router": "0.0.4",
+    "ws": "~0.4.31",
+    "options": "0.0.5"
+  }
+}
