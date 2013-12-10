@@ -84,13 +84,17 @@ var app = argo()
 var server = http.createServer(app.run).listen(process.env.PORT || 3000);
 
 
+var WsSocketMessages = {
+  SUBCRIBE : 'subscribe',
+  UNSUBSCRIBE : 'unsubscribe',
+  ADD : 'add',
+  EVENT : 'event'
+};
+
 //Websocket logging implementation below.
 var WebSocketServer = require('ws').Server,
     wss = new WebSocketServer({server: server}),
-    clientMapping = {};
-
-var wsClients = new ClientMappings();
-
+    wsClients = new ClientMappings();
 
 function ClientMappings(){
   if(!(this instanceof ClientMappings))
@@ -103,17 +107,23 @@ ClientMappings.prototype.publish = function(channel,msg,ws) {
   if(this.mappings[channel] === undefined)
     return;
 
+  var msgObject = {
+    type : WsSocketMessages.EVENT,
+    channel : channel,
+    message : msg
+  };
+
   if(ws === undefined){
     for(var cId in this.mappings[channel]){
       try{
-        this.mappings[channel][cId].send(msg);
+        this.mappings[channel][cId].send(JSON.stringify(msgObject));
       }catch(err){
         console.error(err)
       }
     }
   }else{
     if(this.mappings[channel] && this.mappings[channel][ws._clientId]){
-      this.mappings[channel][ws._clientId].send(msg);
+      this.mappings[channel][ws._clientId].send(JSON.stringify(msgObject));
     }
   }
 };
@@ -140,13 +150,6 @@ ClientMappings.prototype.unsubscribe = function(ws,channel){
     delete this.mappings[channel][ws._clientId];
   }
 };
-
-var WsSocketMessages = {
-  SUBCRIBE : 'subscribe',
-  UNSUBSCRIBE : 'unsubscribe',
-  ADD : 'add',
-};
-
 
 //Connection event.    
 wss.on('connection', function(ws) {

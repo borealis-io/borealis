@@ -27,6 +27,8 @@
     "redis": "~0.9.1",
     "argo-url-router": "0.0.4",
     "ws": "~0.4.31",
-    "options": "0.0.5"
+    "options": "0.0.5",
+    "node-uuid": "~1.4.1",
+    "extend": "~1.2.1"
   }
 }
