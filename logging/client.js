@@ -6,39 +6,8 @@ var util = require('util'),
     extend = require('extend'),
     WebSocket = require('ws');
 
-/*
 
-var WebSocket = require('ws'),
-    host = process.env.WEB_SOCKET_HOST || '0.0.0.0',
-    port = process.env.WEB_SOCKET_PORT || 3000,
-    wsPath = 'ws://'+host+':'+port+'/',
-    ws = new WebSocket(wsPath);
-
-ws.on('open', function() {
-  var msg = {
-  	type : 'subscribe',
-  	channel : 'app1'
-  };
-  ws.send(JSON.stringify(msg));
-
-  setTimeout(function(){
-	var msg = {
-	  	type : 'add',
-	  	channel : 'app1',
-	  	message : 'new message from ws'
-	  };
-
-  	ws.send(JSON.stringify(msg));
-  },5000)
-
-});
-
-ws.on('message', function(data, flags) {
-  console.log(data);
-});
-
-*/
-
+module.exports = LogClient;
 
 util.inherits(LogClient, EventEmitter);
 
@@ -53,37 +22,52 @@ function LogClient(opts){
 
   extend(this.options,opts);
 
-  var self = this;
+  this.ws = {};
 
-  self.ws = new WebSocket('ws://'+self.options.host+':'+self.options.port+'/');
-
-  self.ws.on('open',function(){
-    self.ws.on('message',function(data){
-      try{
-        var msg = JSON.parse(data);
-        console.log(msg);
-      }catch(err){
-        self.emit('error',err);
-      }
-    });
-  });
-
-  self.ws.on('error',function(err){
-    self.emit('error',err);
-  });
 }
 
-var origOn = LogClient.prototype.on;
-LogClient.prototype.on = function(){
-  origOn.apply(this,arguments);
+LogClient.prototype._channelSubscribe = function(channel,cb){
+  this.ws.send(JSON.stringify({type : 'subscribe',channel : channel}),cb);
 };
 
+LogClient.prototype._channelUnsubscribe = function(channel,cb){
+  this.ws.send(JSON.stringify({type : 'unsubscribe',channel : channel}),cb);
+};
 
-var c = new LogClient();
+LogClient.prototype._onData = function(data){
+  var self = this;
 
-c.on('asd',function(){
-  console.log(arguments)
-});
+  try{
+    var msg = JSON.parse(data);
 
+    if(msg.type === 'event' && msg.channel && msg.message){
+      self.emit(msg.channel,msg);
+    } 
 
+    //console.log(msg);
+  }catch(err){
+    console.log(err)
+    self.emit('error',err);
+  }
+};
 
+LogClient.prototype.open = function(cb){
+  var self = this;
+  this.ws = new WebSocket('ws://'+self.options.host+':'+self.options.port+'/');
+
+  self.ws.on('open',function(){
+    self.ws.on('message',self._onData.bind(self));
+    cb();
+  });
+
+  this.ws.on('error',self.emit);
+};
+
+LogClient.prototype.listen = function(channel,func){
+  this._channelSubscribe(channel);
+  this.on(channel,func);
+};
+
+LogClient.prototype.close = function(){
+  this.ws.close();
+};

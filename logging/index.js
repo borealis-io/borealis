@@ -161,8 +161,7 @@ wss.on('connection', function(ws) {
     if(messageObject.type === WsSocketMessages.SUBCRIBE){
       
       wsClients.subscribe(ws,messageObject.channel);
-      ws.send("{'subscription':'"+messageObject.channel+"'}");
-
+      ws.send(JSON.stringify({subscription : messageObject.channel}));
       redisClient.lrange("chan:"+messageObject.channel, 0, 19, function(error, response) {
         if(!error) {
           for(var i=response.length;i>=0;--i){
@@ -181,16 +180,16 @@ wss.on('connection', function(ws) {
 
       redisClient.lpush(channelKey,messageObject.message, function(error, response) {
         if(error) {
-          ws.send("{'subscription':'"+messageObject.channel+"','status' : '500'}");
+          ws.send(JSON.stringify({subscription : messageObject.channel,status : 500}));
         } else {
           wsClients.publish(messageObject.channel,messageObject.message);
-          ws.send("{'subscription':'"+messageObject.channel+"','status' : '204'}");
+          ws.send(JSON.stringify({subscription : messageObject.channel,status : 204}));
         }
       });
 
     }else{
       // type does not exist
-      ws.send("{'subscription':'"+messageObject.channel+"','status' : '404','message' : 'message type not valid'}");
+      ws.send(JSON.stringify({subscription : messageObject.channel,status : 404,message : 'message type not valid'}));
     }
   });
 
