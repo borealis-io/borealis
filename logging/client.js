@@ -68,6 +68,10 @@ LogClient.prototype.listen = function(channel,func){
   this.on(channel,func);
 };
 
+LogClient.prototype.publish = function(channel,message) {
+  this.ws.send(JSON.stringify({type : 'add',channel : channel,message : message}))
+};
+
 LogClient.prototype.close = function(){
   this.ws.close();
 };
