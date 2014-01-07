@@ -4,7 +4,7 @@ A Platform-as-a-Service based on [Docker](http://www.docker.io) and [Node.js](ht
 
 Borealis features:
 
-* Deploy apps using Git.
+* App deployment using Git.
 * Dynamic HTTP routing.
 * Heroku buildpack support.
 * Containers all the way down.
