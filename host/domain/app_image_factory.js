@@ -25,7 +25,7 @@ AppImageFactory.prototype.create = function(cb) {
   });
 
   pipeline.fit(function() {
-    cb(self.appImageName);
+    cb(null, self.appImageName);
   });
 
   pipeline.flow();
@@ -37,13 +37,14 @@ AppImageFactory.prototype.createContainer = function(cb) {
     Cmd: ['/build/builder']
   };
 
+  var self = this;
   this.container.create(config, function(err, body) {
     if (!body || err) {
       return cb(err);
     }
 
     body = JSON.parse(body.toString());
-    this.id = body.Id;
+    self.id = body.Id;
 
     cb();
   });

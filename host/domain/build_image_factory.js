@@ -15,9 +15,7 @@ BuildImageFactory.prototype.create = function(cb) {
   var self = this;
   var steps = ['createContainer', 'attachStream', 'start', 'wait', 'commit']
   steps.forEach(function(step) {
-    console.log('fitting', step);
     pipeline.fit(function(context, next) {
-      console.log('calling', step);
       self[step].call(self, function(err) {
         if (err) {
           cb(err);
@@ -29,7 +27,7 @@ BuildImageFactory.prototype.create = function(cb) {
   });
 
   pipeline.fit(function() {
-    cb(self.buildImageName);
+    cb(null, self.buildImageName);
   });
 
   pipeline.flow();
@@ -67,17 +65,16 @@ BuildImageFactory.prototype.attachStream = function(cb) {
 BuildImageFactory.prototype.start = function(cb) {
   var self = this;
 
+  self.client.on('end', function() {
+    cb();
+  });
+
   this.container.start(this.id, function(err) {
-    console.log('attempting to start container...');
     if (err) {
       return cb(err);
     }
 
-    console.log('starting build image');
-
     self.client.end();
-
-    cb();
   });
 };
 

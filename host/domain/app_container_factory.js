@@ -24,7 +24,7 @@ AppContainer.prototype.create = function(cb) {
   });
 
   pipeline.fit(function() {
-    cb(self.appImageName);
+    cb(null, self.appImageName);
   });
 
   pipeline.flow();
@@ -37,6 +37,7 @@ AppContainer.prototype.createContainer = function(cb) {
     Env: ['PORT=5000'],
   };
 
+  var self = this;
   this.container.create(config, function(err, body) {
     if (!body || err) {
       return cb(err);
@@ -44,7 +45,7 @@ AppContainer.prototype.createContainer = function(cb) {
 
     body = JSON.parse(body.toString());
 
-    this.id = body.id;
+    self.id = body.Id;
 
     cb();
   });

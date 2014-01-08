@@ -25,12 +25,12 @@ BuildResource.prototype.create = function(env, next) {
     return next(env);
   };
 
-  buildImageFactory.create(function(err, context) {
+  buildImageFactory.create(function(err, buildImageName) {
     if (err) {
       return error(err);
     }
 
-    var appImageFactory = new AppImageFactory(container, context.buildImageName, appName);
+    var appImageFactory = new AppImageFactory(container, buildImageName, appName);
     appImageFactory.create(function(err, appImageName) {
       if (err) {
         return error(err);
