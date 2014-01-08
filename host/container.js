@@ -139,6 +139,7 @@ Container.prototype.start = function(id, body, cb) {
       return cb(new Error('Unable to start container - server error'));
     }
 
+    console.log('calling cb after no error.', res.statusCode);
     cb();
   });
 
