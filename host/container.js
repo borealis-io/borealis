@@ -132,17 +132,32 @@ Container.prototype.start = function(id, body, cb) {
     headers: { 'Content-Type': contentType },
   });
 
+  var cbCalled = false;
   var req = http.request(options, function(res) {
     if (res.statusCode === 404) {
+      cbCalled = true;
       return cb(new Error('Unable to start build container - container does not exist'));
     } else if (res.statusCode === 500) {
+      cbCalled = true;
       return cb(new Error('Unable to start container - server error'));
     }
 
+    cbCalled = true;
     cb();
   });
 
-  req.on('error', cb);
+  req.on('error', function(err) {
+    if (err.code === 'ECONNRESET') {
+      return;
+    }
+    cbCalled = true;
+    cb(err);
+  });
+
+  req.on('end', function() {
+    cbCalled = true;
+    cb();
+  });
 
   if (body) {
     req.write(body);
