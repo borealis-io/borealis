@@ -19,7 +19,6 @@ BuildResource.prototype.create = function(env, next) {
 
   buildProcess.execute(function(err) {
     if (err) {
-      throw err;
       env.response.statusCode = 500;
       return next(env);
     }
