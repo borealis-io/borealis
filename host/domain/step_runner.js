@@ -6,27 +6,23 @@ var StepRunner = module.exports = function(subject) {
   this.pipeline = pipeworks();
 };
 
-StepRunner.prototype.prepare = function() {
-  var self = this;
-
-  this.subject.steps.forEach(function(step) {
-    self.pipeline.fit(function(context, next) {
-      self.subject[step].call(self.subject, function(err) {
-        if (err) {
-          cb(err);
-        } else {
-          next(context);
-        }
-      });
-    });
-  });
-
-  this.state = 'ready'
-};
-
 StepRunner.prototype.run = function(cb) {
   if (this.state === 'fresh') {
-    this.prepare();
+    var self = this;
+
+    this.subject.steps.forEach(function(step) {
+      self.pipeline.fit(function(context, next) {
+        self.subject[step].call(self.subject, function(err) {
+          if (err) {
+            cb(err);
+          } else {
+            next(context);
+          }
+        });
+      });
+    });
+
+    this.state = 'ready'
   }
 
   if (cb) {
