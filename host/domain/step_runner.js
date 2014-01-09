@@ -6,10 +6,11 @@ var StepRunner = module.exports = function(subject) {
   this.pipeline = pipeworks();
 };
 
-StepRunner.prototype.prepare = function() {
+StepRunner.prototype.prepare = function(cb) {
   var self = this;
 
   this.subject.steps.forEach(function(step) {
+    console.log(step);
     self.pipeline.fit(function(context, next) {
       self.subject[step].call(self.subject, function(err) {
         if (err) {
@@ -26,7 +27,7 @@ StepRunner.prototype.prepare = function() {
 
 StepRunner.prototype.run = function(cb) {
   if (this.state === 'fresh') {
-    this.prepare();
+    this.prepare(cb);
   }
 
   if (cb) {

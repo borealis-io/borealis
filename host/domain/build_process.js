@@ -1,4 +1,6 @@
 var pipeworks = require('pipeworks');
+var http = require('http');
+var qs = require('querystring');
 
 var AppContainer = require('./app_container');
 var AppImage = require('./app_image');
@@ -48,9 +50,52 @@ BuildProcess.prototype.execute = function(cb) {
   pipeline.fit(function(context, next) {
     var appContainer = new AppContainer(container, context.appImage.name);
     var appContainerRunner = new StepRunner(appContainer);
+    context.appContainer = appContainer;
 
-    appContainerRunner.run(cb);
+    appContainerRunner.run(function(err){
+      if(err) return cb(err);
+      next(context);
+    });
+    
   });
+
+  pipeline.fit(function(context, next) {
+    var opts = {
+      host:'172.17.0.86',
+      port:8081,
+      path:'/apps',
+      method:'POST'
+    };
+
+    container.inspect(context.appContainer.id, function(err, body) {
+      console.log('inspect');
+      if(err) return cb(err);
+      var containerInfo = JSON.parse(body);
+      var containerIp = containerInfo.NetworkSettings.IpAddress;
+      //hard coded for now.
+      var port = '' + 5000;
+      var host = context.appImage.name+'.labapp.io';
+      var target = containerIp + ':' + port;
+      var req = http.request(opts, function(res) {
+        if(res.statusCode != 201) {
+          return cb(new Error('Error adding app to router - ' + res.statusCode));
+        }
+        cb(null);
+      });
+
+      var data = qs.stringify({ host: host, target: target});
+      
+      req.on('error', function(e) {
+        return cb(new Error('Problem adding app to router.'));
+      });
+      
+      req.write(data);
+      req.end();
+    });
+  });
+
+
+
 
   var context = new Context();
   pipeline.flow(context);

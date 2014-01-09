@@ -114,6 +114,23 @@ Container.prototype.attach = function(id, input, cb) {
   });
 };
 
+Container.prototype.inspect = function(id, cb) {
+  var options = this._configure({
+    method:'GET', 
+    path: '/containers/'+ id + '/json'
+  });
+  console.log('inspect');
+
+  http.request(options, function(res) {
+    if(res.statusCode != 200) {
+      return cb(new Error('Can\'t fetch container - ' + res.statusCode));
+    }
+    console.log('inspect');
+
+    buffer(res, cb);
+  });
+};
+
 Container.prototype.start = function(id, body, cb) {
   if (typeof body === 'function') {
     cb = body;
