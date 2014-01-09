@@ -25,30 +25,33 @@ BuildProcess.prototype.execute = function(cb) {
 
   var self = this;
 
-  pipeline
-    .fit(function(context, next) {
-      context.buildImage = new BuildImage(container, config, self.input, self.app);
-      var buildImageRunner = new StepRunner(context.buildImage);
+  pipeline.fit(function(context, next) {
+    context.buildImage = new BuildImage(container, config, self.input, self.app);
+    var buildImageRunner = new StepRunner(context.buildImage);
 
-      buildImageRunner.run(function(err) {
-        if (err) return cb(err);
-        next(context);
-      });
-    })
-    .fit(function(context, next) {
-      context.appImage = new AppImage(container, context.buildImage.name, self.app);
-      var appImageRunner = new StepRunner(context.appImage);
+    buildImageRunner.run(function(err) {
+      if (err) return cb(err);
+      next(context);
+    });
+  });
 
-      appImageRunner.run(function(err) {
-        if (err) return cb(err);
-        next(context);
-      })
-    })
-    .fit(function(context, next) {
-      var appContainer = new AppContainer(container, context.appImage.name);
-      var appContainerRunner = new StepRunner(appContainer);
+  pipeline.fit(function(context, next) {
+    context.appImage = new AppImage(container, context.buildImage.name, self.app);
+    var appImageRunner = new StepRunner(context.appImage);
 
-      appContainerRunner.run(cb);
+    appImageRunner.run(function(err) {
+      if (err) return cb(err);
+      next(context);
     })
-    .flow(new Context());
+  });
+
+  pipeline.fit(function(context, next) {
+    var appContainer = new AppContainer(container, context.appImage.name);
+    var appContainerRunner = new StepRunner(appContainer);
+
+    appContainerRunner.run(cb);
+  });
+
+  var context = new Context();
+  pipeline.flow(context);
 };
