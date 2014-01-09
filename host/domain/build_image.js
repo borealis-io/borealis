@@ -1,40 +1,18 @@
-var pipeworks = require('pipeworks');
-
-var BuildImageFactory = module.exports = function(container, config, stdin, name) {
+var BuildImage = module.exports = function(container, config, stdin, name) {
   this.container = container;
   this.config = config;
   this.stdin = stdin;
   this.name = name;
-  this.buildImageName = 'build-' + this.name;
+
+  this.name = 'build-' + this.name;
+
   this.id = null;
   this.client = null;
+
   this.steps = ['createContainer', 'attachStream', 'start', 'wait', 'commit']
 };
 
-BuildImageFactory.prototype.create = function(cb) {
-  var pipeline = pipeworks();
-  var self = this;
-  var steps = ['createContainer', 'attachStream', 'start', 'wait', 'commit']
-  steps.forEach(function(step) {
-    pipeline.fit(function(context, next) {
-      self[step].call(self, function(err) {
-        if (err) {
-          cb(err);
-        } else {
-          next(context);
-        }
-      });
-    });
-  });
-
-  pipeline.fit(function() {
-    cb(null, self.buildImageName);
-  });
-
-  pipeline.flow();
-};
-
-BuildImageFactory.prototype.createContainer = function(cb) {
+BuildImage.prototype.createContainer = function(cb) {
   var self = this;
 
   this.container.create(this.config, function(err, body) {
@@ -49,7 +27,7 @@ BuildImageFactory.prototype.createContainer = function(cb) {
   });
 };
 
-BuildImageFactory.prototype.attachStream = function(cb) {
+BuildImage.prototype.attachStream = function(cb) {
   var self = this;
 
   this.container.attach(this.id, this.stdin, function(err, client) {
@@ -63,7 +41,7 @@ BuildImageFactory.prototype.attachStream = function(cb) {
   });
 };
 
-BuildImageFactory.prototype.start = function(cb) {
+BuildImage.prototype.start = function(cb) {
   var self = this;
 
   self.client.on('end', function() {
@@ -79,7 +57,7 @@ BuildImageFactory.prototype.start = function(cb) {
   });
 };
 
-BuildImageFactory.prototype.wait = function(cb) {
+BuildImage.prototype.wait = function(cb) {
   this.container.wait(this.id, function(err) {
     if (err) {
       return cb(err);
@@ -89,8 +67,8 @@ BuildImageFactory.prototype.wait = function(cb) {
   });
 };
 
-BuildImageFactory.prototype.commit = function(cb) {
-  this.container.commit(this.id, this.buildImageName, function(err, id) {
+BuildImage.prototype.commit = function(cb) {
+  this.container.commit(this.id, this.name, function(err, id) {
     if (err) {
       return cb(err);
     }

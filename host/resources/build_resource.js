@@ -12,7 +12,7 @@ BuildResource.prototype.init = function(config) {
 BuildResource.prototype.create = function(env, next) {
   var options = {
     input: env.request,
-    appName: env.route.params.name
+    app: env.route.params.name
   };
 
   var buildProcess = new BuildProcess(options);

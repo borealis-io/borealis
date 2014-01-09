@@ -1,34 +1,10 @@
-var pipeworks = require('pipeworks');
-
 var AppContainer = module.exports = function(container, appImageName) {
   this.container = container;
   this.appImageName = appImageName;
+
   this.id = null;
+
   this.steps = ['createContainer', 'start'];
-};
-
-AppContainer.prototype.create = function(cb) {
-  var pipeline = pipeworks();
-  var self = this;
-  var steps = ['createContainer', 'start'];
-  
-  steps.forEach(function(step) {
-    pipeline.fit(function(context, next) {
-      self[step].call(self, function(err) {
-        if (err) {
-          cb(err);
-        } else {
-          next(context);
-        }
-      });
-    });
-  });
-
-  pipeline.fit(function() {
-    cb(null, self.appImageName);
-  });
-
-  pipeline.flow();
 };
 
 AppContainer.prototype.createContainer = function(cb) {
