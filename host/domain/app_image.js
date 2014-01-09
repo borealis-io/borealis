@@ -5,6 +5,7 @@ var AppImageFactory = module.exports = function(container, buildImageName, appNa
   this.buildImageName = buildImageName;
   this.appImageName = 'app-' + appName;
   this.id = null;
+  this.steps = ['createContainer', 'start', 'wait', 'commit'];
 };
 
 AppImageFactory.prototype.create = function(cb) {

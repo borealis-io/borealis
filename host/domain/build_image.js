@@ -8,6 +8,7 @@ var BuildImageFactory = module.exports = function(container, config, stdin, name
   this.buildImageName = 'build-' + this.name;
   this.id = null;
   this.client = null;
+  this.steps = ['createContainer', 'attachStream', 'start', 'wait', 'commit']
 };
 
 BuildImageFactory.prototype.create = function(cb) {

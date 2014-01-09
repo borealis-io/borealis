@@ -4,6 +4,7 @@ var AppContainer = module.exports = function(container, appImageName) {
   this.container = container;
   this.appImageName = appImageName;
   this.id = null;
+  this.steps = ['createContainer', 'start'];
 };
 
 AppContainer.prototype.create = function(cb) {
