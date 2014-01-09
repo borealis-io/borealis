@@ -12,6 +12,7 @@ case "$1" in
       if [[ $refname = "refs/heads/master" ]] ; then
         echo "Archiving rev $newrev." >> "$HOME/.logs"
         git archive $newrev > "$HOME/tmp/$newrev.tar"
+        curl -i -X POST --data-binary "@$HOME/tmp/$newrev.tar" -H "Content-Type: application/x-tar" "http://localhost:5000/builds/$APP"
       fi
 
     done
@@ -27,7 +28,7 @@ case "$1" in
         cat > $PRERECEIVE_HOOK <<EOF
 #!/usr/bin/env bash
 set -e; set -o pipefail;
-cat | githook git-hook $APP
+cat | ~/git-receive.sh git-hook $APP
 EOF
         chmod +x $PRERECEIVE_HOOK
         echo "Hook and repo generated." >> "$HOME/.logs"
