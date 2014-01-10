@@ -19,12 +19,13 @@ var Routing = module.exports = function(container, app, appContainerId) {
 };
 
 Routing.prototype.inspect = function(cb) {
+  var self = this;
   this.container.inspect(this.appContainerId, function(err, body) {
     if (err) return cb(err);
 
     var info = JSON.parse(body);
-    this.appAddress = info.NetworkSettings.IPAddress;
-    this.appPort = Object.keys(info.NetworkSettings.Ports)[0].split('/')[0];
+    self.appAddress = info.NetworkSettings.IPAddress;
+    self.appPort = Object.keys(info.NetworkSettings.Ports)[0].split('/')[0];
 
     cb();
   });
@@ -60,7 +61,6 @@ Routing.prototype.setRoute = function(cb) {
 Routing.prototype.allowAccess = function(cb) {
   var dockerInterface = 'docker0';
 
-  console.log('allowing router to send to app');
   iptables.allow({
     chain: 'FORWARD',
     src: this.routerAddress,
@@ -71,7 +71,6 @@ Routing.prototype.allowAccess = function(cb) {
     dport: this.appPort,
   });
 
-  console.log('allowing app to receive from router');
   iptables.allow({
     chain: 'FORWARD',
     src: this.appAddress,
