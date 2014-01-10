@@ -38,6 +38,12 @@ argo()
 argo()
   .use(urlRouter)
   .use(logger)
+  .get('/apps', function(handle) {
+    handle('request', function(env, next) {
+      env.response.body = router;
+      next(env);
+    });
+  })
   .post('/apps', function(handle) {
     handle('request', function(env, next) {
       env.request.getBody(function(err, body) {
