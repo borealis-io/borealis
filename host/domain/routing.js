@@ -1,6 +1,8 @@
 var http = require('http');
 var qs = require('querystring');
 
+var iptables = require('iptables');
+
 var Routing = module.exports = function(container, app, appContainerId) {
   this.container = container;
   this.app = app;
@@ -13,7 +15,7 @@ var Routing = module.exports = function(container, app, appContainerId) {
   this.appAddress = null;
   this.appPort = null;
 
-  this.steps = ['inspect', 'setRoute'];
+  this.steps = ['inspect', 'setRoute', 'allowAccess'];
 };
 
 Routing.prototype.inspect = function(cb) {
@@ -53,4 +55,44 @@ Routing.prototype.setRoute = function(cb) {
 
   req.write(data);
   req.end();
+};
+
+Routing.prototype.allowAccess = function(cb) {
+  var dockerInterface = 'docker0';
+
+  console.log('allowing router to send to app');
+  iptables.allow({
+    chain: 'FORWARD',
+    src: this.routerAddress,
+    dst: this.appAddress,
+    in: dockerInterface,
+    out: dockerInterface,
+    protocol: 'tcp',
+    dport: this.appPort,
+  });
+
+  console.log('allowing app to receive from router');
+  iptables.allow({
+    chain: 'FORWARD',
+    src: this.appAddress,
+    dst: this.routerAddress,
+    in: dockerInterface,
+    out: dockerInterface,
+    protocol: 'tcp',
+    sport: this.appPort,
+  });
+
+  var containerLockdownConfig = {
+    chain: 'FORWARD',
+    in: dockerInterface,
+    out: dockerInterface,
+    target: 'DROP'
+  };
+
+  //console.log('deleting rule preventing cross-container communication')
+  //iptables.deleteRule(containerLockdownConfig);
+  //console.log('adding rule preventing cross-container communication')
+  //iptables.newRule(containerLockdownConfig);
+
+  cb();
 };
