@@ -73,7 +73,7 @@ Container.prototype.create = function(config, cb) {
 
   var req = http.request(options, function(res) {
     if (res.statusCode != 201) {
-      return cb(new Error('Unable to create build container - ' + res.statusCode));
+      return cb(new Error('Unable to create container - ' + res.statusCode));
     }
 
     buffer(res, cb);
@@ -114,6 +114,27 @@ Container.prototype.attach = function(id, input, cb) {
   });
 };
 
+Container.prototype.inspect = function(id, cb) {
+  var options = this._configure({
+    method: 'GET',
+    path: '/containers/' + id + '/json',
+  });
+
+  var req = http.request(options, function(res) {
+    if (res.statusCode === 404) {
+      return cb(new Error('Unable to inspect container - container does not exist'));
+    } else if (res.statusCode === 500) {
+      return cb(new Error('Unable to inspect container - server error'));
+    }
+
+    buffer(res, cb);
+  });
+
+  req.on('error', cb);
+
+  req.end();
+};
+
 Container.prototype.start = function(id, body, cb) {
   if (typeof body === 'function') {
     cb = body;
@@ -136,7 +157,7 @@ Container.prototype.start = function(id, body, cb) {
   var req = http.request(options, function(res) {
     if (res.statusCode === 404) {
       cbCalled = true;
-      return cb(new Error('Unable to start build container - container does not exist'));
+      return cb(new Error('Unable to start container - container does not exist'));
     } else if (res.statusCode === 500) {
       cbCalled = true;
       return cb(new Error('Unable to start container - server error'));
@@ -175,9 +196,9 @@ Container.prototype.wait = function(id, cb) {
 
   var req = http.request(options, function(res) {
     if (res.statusCode === 404) {
-      return cb(new Error('Unable to wait a build container - container does not exist'));
+      return cb(new Error('Unable to wait a container - container does not exist'));
     } else if (res.statusCode === 500) {
-      return cb(new Error('Unable to wait a build container - server error'));
+      return cb(new Error('Unable to wait a container - server error'));
     }
 
     buffer(res, function(err, body) {
@@ -186,7 +207,7 @@ Container.prototype.wait = function(id, cb) {
       var code = body.StatusCode;
 
       if (code !== 0) {
-        cb(new Error('Unable to execute build container - ' + code));
+        cb(new Error('Unable to execute container - ' + code));
       } else {
         cb()
       }

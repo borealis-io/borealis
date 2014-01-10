@@ -1,6 +1,5 @@
 var pipeworks = require('pipeworks');
 
-var AppContainer = require('./app_container');
 var AppImage = require('./app_image');
 var BuildImage = require('./build_image');
 var Container = require('../container');
@@ -14,9 +13,9 @@ function Context() {
   this.appImage = null;
 }
 
-var BuildProcess = module.exports = function(options) {
-  this.app = options.app;
-  this.input = options.input;
+var BuildProcess = module.exports = function(app, input) {
+  this.app = app;
+  this.input = input;
 };
 
 BuildProcess.prototype.execute = function(cb) {
@@ -46,10 +45,7 @@ BuildProcess.prototype.execute = function(cb) {
   });
 
   pipeline.fit(function(context, next) {
-    var appContainer = new AppContainer(container, context.appImage.name);
-    var appContainerRunner = new StepRunner(appContainer);
-
-    appContainerRunner.run(cb);
+    cb(null, context.appImage.name);
   });
 
   var context = new Context();
