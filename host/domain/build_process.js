@@ -61,7 +61,7 @@ BuildProcess.prototype.execute = function(cb) {
 
   pipeline.fit(function(context, next) {
     var opts = {
-      host:'172.17.0.86',
+      host:'172.17.0.15',
       port:8081,
       path:'/apps',
       method:'POST'
@@ -93,9 +93,6 @@ BuildProcess.prototype.execute = function(cb) {
       req.end();
     });
   });
-
-
-
 
   var context = new Context();
   pipeline.flow(context);

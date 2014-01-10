@@ -121,14 +121,13 @@ Container.prototype.inspect = function(id, cb) {
   });
   console.log('inspect');
 
-  http.request(options, function(res) {
-    if(res.statusCode != 200) {
-      return cb(new Error('Can\'t fetch container - ' + res.statusCode));
-    }
+  var req = http.request(options, function(res) {
     console.log('inspect');
 
     buffer(res, cb);
   });
+
+  req.end();
 };
 
 Container.prototype.start = function(id, body, cb) {
