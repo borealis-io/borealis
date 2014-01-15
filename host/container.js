@@ -243,6 +243,30 @@ Container.prototype.commit = function(id, image, cb) {
   req.end();
 };
 
+Container.prototype.remove = function(id, shouldRemoveVolumes, cb) {
+  if (typeof shouldRemoveVolumes === 'function') {
+    cb = shouldRemoveVolumes;
+    shouldRemoveVolumes = false;
+  }
+
+  var options = this._configure({
+    method: 'DELETE',
+    path: '/containers/' + id + '?v=' + shouldRemoveVolumes
+  });
+
+  var req = http.request(options, function(res) {
+    if (res.statusCode === 404) {
+      return cb(new Error('Unable to remove container - container does not exist'));
+    } else if (res.statusCode === 400) {
+      return cb(new Error('Unable to remove container - bad parameter'));
+    }
+
+    cb();
+  });
+
+  req.end();
+};
+
 Container.create = function(server) {
   return new Container(server);
 };

@@ -6,7 +6,7 @@ var AppImageFactory = module.exports = function(container, buildImageName, appNa
 
   this.id = null;
 
-  this.steps = ['createContainer', 'start', 'wait', 'commit'];
+  this.steps = ['createContainer', 'start', 'wait', 'commit', 'clean'];
 };
 
 AppImageFactory.prototype.createContainer = function(cb) {
@@ -38,4 +38,8 @@ AppImageFactory.prototype.wait = function(cb) {
 
 AppImageFactory.prototype.commit = function(cb) {
   this.container.commit(this.id, this.name, cb);
+};
+
+AppImageFactory.prototype.clean = function(cb) {
+  this.container.remove(this.id, true, cb);
 };

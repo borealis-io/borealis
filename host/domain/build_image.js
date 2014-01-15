@@ -9,7 +9,7 @@ var BuildImage = module.exports = function(container, config, stdin, name) {
   this.id = null;
   this.client = null;
 
-  this.steps = ['createContainer', 'attachStream', 'start', 'wait', 'commit']
+  this.steps = ['createContainer', 'attachStream', 'start', 'wait', 'commit', 'clean']
 };
 
 BuildImage.prototype.createContainer = function(cb) {
@@ -69,6 +69,16 @@ BuildImage.prototype.wait = function(cb) {
 
 BuildImage.prototype.commit = function(cb) {
   this.container.commit(this.id, this.name, function(err, id) {
+    if (err) {
+      return cb(err);
+    }
+
+    cb();
+  });
+};
+
+BuildImage.prototype.clean = function(cb) {
+  this.container.remove(this.id, true, function(err) {
     if (err) {
       return cb(err);
     }
